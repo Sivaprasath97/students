@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Widget</title>
+    <style>
+        /* body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: #f0f0f0;
+            margin: 0;
+        } */
+
+        .weather-widget {
+            position: relative;
+            background: #ffffff;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 15px;
+            overflow: hidden;
+            width: 300px;
+            text-align: center;
+            padding: 20px;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .weather-widget:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .date-container {
+            background: #000;
+            color: #fff;
+            padding: 20px;
+            border-top-left-radius: 15px;
+            border-top-right-radius: 15px;
+        }
+
+        .day {
+            font-size: 1.4em;
+            font-weight: bold;
+        }
+
+        .date {
+            font-size: 1.2em;
+        }
+
+        .weather-container {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .icon {
+            font-size: 4em;
+            margin-bottom: 10px;
+        }
+
+        .temperature {
+            font-size: 2.2em;
+            font-weight: bold;
+        }
+
+        .weather-description {
+            font-size: 1.1em;
+            color: #555;
+            margin-top: 5px;
+        }
+
+        .location-container {
+            background: #000;
+            color: #fff;
+            padding: 10px;
+            border-bottom-left-radius: 15px;
+            border-bottom-right-radius: 15px;
+        }
+
+        .location {
+            font-size: 1.1em;
+        }
+    </style>
+</head>
+<body>
+    <div class="weather-widget" id="weather-widget">
+        <div class="date-container">
+            <div class="day" id="day"></div>
+            <div class="date" id="date"></div>
+        </div>
+        <div class="weather-container">
+            <div class="icon" id="icon">❓</div>
+            <div class="temperature" id="temperature">Loading...</div>
+            <div class="weather-description" id="description">Fetching...</div>
+        </div>
+        <div class="location-container">
+            <div class="location" id="location">Loading location...</div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const dayElement = document.getElementById('day');
+            const dateElement = document.getElementById('date');
+            const iconElement = document.getElementById('icon');
+            const temperatureElement = document.getElementById('temperature');
+            const descriptionElement = document.getElementById('description');
+            const locationElement = document.getElementById('location');
+            const weatherWidget = document.getElementById('weather-widget');
+
+            // Current date and day
+            const now = new Date();
+            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+            dayElement.textContent = days[now.getDay()];
+            dateElement.textContent = `${months[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
+
+            const apiKey = '6d21ba4b9d383357307e6b5c5d68136f'; // Replace with your OpenWeatherMap API key
+
+            // Fetch weather data based on geolocation
+            function fetchWeather(latitude, longitude) {
+                const url = `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&units=metric&appid=${apiKey}`;
+
+                fetch(url)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Failed to fetch weather data');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        const temperature = Math.round(data.main.temp);
+                        const description = data.weather[0].description;
+                        const locationName = data.name;
+                        const condition = data.weather[0].main.toLowerCase();
+
+                        temperatureElement.textContent = `${temperature}°C`;
+                        descriptionElement.textContent = description.charAt(0).toUpperCase() + description.slice(1);
+                        locationElement.textContent = locationName;
+
+                        iconElement.textContent = getWeatherIcon(condition);
+                        weatherWidget.className = `weather-widget ${condition}`;
+
+                    })
+                    .catch(error => {
+                        console.error('Error fetching weather data:', error);
+                        temperatureElement.textContent = 'Error';
+                        descriptionElement.textContent = 'Unable to fetch weather data';
+                        locationElement.textContent = 'Unknown location';
+                    });
+            }
+
+            // Determine weather icon based on weather condition
+            function getWeatherIcon(condition) {
+                switch (condition) {
+                    case 'clear':
+                        return '☀️';
+                    case 'clouds':
+                        return '☁️';
+                    case 'rain':
+                        return '🌧️';
+                    case 'snow':
+                        return '❄️';
+                    case 'thunderstorm':
+                        return '⛈️';
+                    default:
+                        return '❓';
+                }
+            }
+
+            // Get current location and fetch weather data
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    position => {
+                        const { latitude, longitude } = position.coords;
+                        fetchWeather(latitude, longitude);
+                    },
+                    error => {
+                        console.error('Error getting location:', error);
+                        temperatureElement.textContent = 'Location Error';
+                        descriptionElement.textContent = 'Unable to get your location';
+                        locationElement.textContent = 'Unknown location';
+                    }
+                );
+            } else {
+                temperatureElement.textContent = 'Geolocation not supported';
+                descriptionElement.textContent = 'Your browser does not support geolocation';
+                locationElement.textContent = 'Unknown location';
+            }
+        });
+    </script>
+</body>
+</html>
